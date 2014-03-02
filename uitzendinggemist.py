@@ -40,18 +40,26 @@ class Serie(UitzendingGemist):
 
 
 class Aflevering(UitzendingGemist):
-    def __init__(self, playerid, naam='', serie=None):
+    def __init__(self, nebo_id, naam='', serie=None, serie_naam=None):
         super(Aflevering, self).__init__()
-        self.playerid = playerid
+        self.playerid = nebo_id
         self.naam = naam
         self.serie = serie
+        self.serie_naam = serie_naam
 
     def __unicode__(self):
-        return '{} - {} [{}]'.format(self.serie.naam, self.naam, self.playerid)
+        return '{} - {} [{}]'.format(self.serienaam, self.naam, self.playerid)
+
+    @property
+    def serienaam(self):
+        if self.serie:
+            return self.serie.naam
+        else:
+            return self.serie_naam
 
     @property
     def bestandsnaam(self):
-        return '{} - {} - {}.mp4'.format(self.serie.naam, self.naam, self.playerid)
+        return '{} - {} - {}.mp4'.format(self.serienaam, self.naam, self.playerid)
 
     def get_token(self):
         data = self.rs.get('http://ida.omroep.nl/npoplayer/i.js').content
@@ -75,8 +83,10 @@ class Aflevering(UitzendingGemist):
         r = self.rs.get(url, stream=True)
         print r.status_code
         with open(self.bestandsnaam, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
+            for i, chunk in enumerate(r.iter_content(chunk_size=1024)):
                 if chunk: # filter out keep-alive new chunks
                     f.write(chunk)
-                    sys.stdout.write('.')
+                    if i % 10 == 0:
+                        sys.stdout.write('.')
+                        sys.stdout.flush()
                     f.flush()
