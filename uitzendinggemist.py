@@ -1,6 +1,7 @@
 from collections import defaultdict
 import re
 from bs4 import BeautifulSoup
+from clint.textui import progress
 import requests
 import sys
 
@@ -101,11 +102,9 @@ class Aflevering(UitzendingGemist):
         r = self.rs.get(url, stream=True)
         print r.status_code
         with open(self.bestandsnaam, 'wb') as f:
-            for i, chunk in enumerate(r.iter_content(chunk_size=1024)):
+            total_length = int(r.headers.get('content-length'))
+            for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length/1024) + 1):
                 if chunk: # filter out keep-alive new chunks
                     f.write(chunk)
-                    if i % 10 == 0:
-                        sys.stdout.write('.')
-                        sys.stdout.flush()
                     f.flush()
         print ''
