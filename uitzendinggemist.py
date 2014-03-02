@@ -14,31 +14,36 @@ class UitzendingGemist(object):
         self.data = defaultdict(None)
 
     def load(self):
-            self.data = self.rs.get(self.data_url).json()
+        self.data = self.rs.get(self.data_url).json()
 
 class Serie(UitzendingGemist):
 
-    def __init__(self, nebo_id='POMS_S_VPRO_465233'):
+    def __init__(self, nebo_id=None):
         super(Serie, self).__init__()
-        self.nebo_id = nebo_id
-        self.data_url = 'http://apps-api.uitzendinggemist.nl/series/{}.json'.format(self.nebo_id)
-        self.load()
+        self.afleveringen = []
+        if nebo_id:
+            self.nebo_id = nebo_id
+            self.data_url = 'http://apps-api.uitzendinggemist.nl/series/{}.json'.format(self.nebo_id)
+            self.load()
+            self.afleveringen = [Aflevering(a['nebo_id'], a['name'], self) for a in self.data['episodes']]
+            self.naam = self.data['name']
+            self.beschrijving = self.data['description']
 
     def __unicode__(self):
         return '{} [{}]'.format(self.naam, self.nebo_id)
 
-    @property
-    def naam(self):
-        return self.data['name']
-
-    @property
-    def beschrijving(self):
-        return self.data['description']
-
-    @property
-    def afleveringen(self):
-        return [Aflevering(a['nebo_id'], a['name'], self) for a in self.data['episodes']]
-
+    @staticmethod
+    def by_rss(url, limit=10):
+        serie = Serie()
+        rss = BeautifulSoup(UitzendingGemist().rs.get(url).content, "xml")
+        for item in rss.find_all('item')[:limit]:
+            print item.title.text
+            print item.link.text
+            nebo_id = item.guid.text.replace('http://gemi.st/', '')
+            naam = ' - '.join(item.title.text.split(' - ')[1:])
+            aflevering = Aflevering(nebo_id, naam=naam, serie_naam=rss.channel.title.text)
+            serie.afleveringen.append(aflevering)
+        return serie
 
 class Aflevering(UitzendingGemist):
     def __init__(self, nebo_id, naam='', serie=None, serie_naam=None):
