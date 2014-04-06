@@ -78,7 +78,7 @@ class Aflevering(UitzendingGemist):
 
     @property
     def bestandsnaam(self):
-        return '{} - {} - {}.mp4'.format(self.serienaam, self.naam, self.playerid)
+        return u'{} - {} - {}.mp4'.format(self.serienaam, self.naam, self.playerid).replace('/', '_')
 
     def get_token(self):
         data = self.rs.get('http://ida.omroep.nl/npoplayer/i.js').content
