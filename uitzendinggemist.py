@@ -61,12 +61,11 @@ class Aflevering(UitzendingGemist):
     def by_url(url):
         h = requests.get(url)
         soup = BeautifulSoup(h.content)
-        s = soup.find('span', {'id': 'episode-data'})
-        nebo_id = s.attrs['data-player-id']
-        meta = soup.find('div', {'id': 'meta-information'})
+        nebo_id = url.split('/')[-1]
+        meta = soup.find('div', {'class': 'visible-no-grid-collapse'})
 
         serie_naam = meta.h1.a.text
-        naam = meta.h2.a.text
+        naam = meta.h2.text
         return Aflevering(nebo_id, naam, serie_naam=serie_naam)
 
     @property
