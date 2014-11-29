@@ -4,9 +4,11 @@ from bs4 import BeautifulSoup
 from clint.textui import progress
 import requests
 
-progress.BAR_TEMPLATE = BAR_TEMPLATE = '%s[%s%s] %i/%i MB - %s\r'  # Completed parts shown as MB
+# Completed parts shown as MB
+progress.BAR_TEMPLATE = BAR_TEMPLATE = '%s[%s%s] %i/%i MB - %s\r'
 USER_AGENT = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) '
-              + 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.117 Safari/537.36')
+              'AppleWebKit/537.36 (KHTML, like Gecko) '
+              'Chrome/33.0.1750.117 Safari/537.36')
 
 
 class UitzendingGemist(object):
@@ -27,9 +29,11 @@ class Serie(UitzendingGemist):
         self.episodes = []
         if nebo_id:
             self.nebo_id = nebo_id
-            self.data_url = 'http://apps-api.uitzendinggemist.nl/series/{}.json'.format(self.nebo_id)
+            self.data_url = ('http://apps-api.uitzendinggemist.nl/'
+                             'series/{}.json').format(self.nebo_id)
             self.load()
-            self.episodes = [Episode(episode['nebo_id'], episode['name'], self) for episode in self.data['episodes']]
+            self.episodes = [Episode(episode['nebo_id'], episode['name'], self)
+                             for episode in self.data['episodes']]
             self.name = self.data['name']
             self.description = self.data['description']
 
@@ -45,9 +49,11 @@ class Serie(UitzendingGemist):
             print(item.link.text)
             nebo_id = item.guid.text.replace('http://gemi.st/', '')
             name = ' - '.join(item.title.text.split(' - ')[1:])
-            episode = Episode(nebo_id, name=name, serie_name=rss.channel.title.text)
+            episode = Episode(
+                nebo_id, name=name, serie_name=rss.channel.title.text)
             serie.episodes.append(episode)
         return serie
+
 
 class Episode(UitzendingGemist):
     def __init__(self, nebo_id, name='', serie=None, serie_name=None):
@@ -66,7 +72,9 @@ class Episode(UitzendingGemist):
         soup = BeautifulSoup(page.content)
         nebo_id = url.split('/')[-1]
 
-        serie_name = soup.find('div', {'class': 'row-fluid title-and-broadcasters'}).h1.a.text
+        serie_name = soup.find(
+            'div', {'class': 'row-fluid title-and-broadcasters'}
+        ).h1.a.text
 
         try:
             name = soup.find('div', {'class': 'span-sidebar'}).h2.text
@@ -84,17 +92,21 @@ class Episode(UitzendingGemist):
 
     @property
     def filename(self):
-        raw_name = u'{} - {} - {}.mp4'.format(self.seriename, self.name, self.playerid) if self.name \
-            else u'{} - {}.mp4'.format(self.seriename, self.playerid)
+        raw_name = (u'{} - {} - {}.mp4'.format(
+            self.seriename, self.name, self.playerid) if self.name
+            else u'{} - {}.mp4'.format(self.seriename, self.playerid))
         return raw_name.replace('/', '_')
 
     def get_token(self):
         data = self.rs.get('http://ida.omroep.nl/npoplayer/i.js').content
-        return re.compile('.token\s*=\s*"(.*?)"', re.DOTALL + re.IGNORECASE).search(str(data)).group(1)
+        return re.compile(
+            '.token\s*=\s*"(.*?)"', re.DOTALL + re.IGNORECASE
+        ).search(str(data)).group(1)
 
     def get_streams(self, token):
-        url = ('http://ida.omroep.nl/odi/' +
-               '?prid={}&puboptions=h264_bb,h264_std,h264_sb&adaptive=no&part=1&token={}').format(self.playerid, token)
+        url = ('http://ida.omroep.nl/odi/'
+               '?prid={}&puboptions=h264_bb,h264_std,h264'
+               '_sb&adaptive=no&part=1&token={}').format(self.playerid, token)
         return self.rs.get(url).json()['streams']
 
     def get_url(self):
@@ -114,7 +126,8 @@ class Episode(UitzendingGemist):
         with open(self.filename, 'wb') as f:
             total_length = int(r.headers.get('content-length'))
             for chunk in progress.bar(
-                    r.iter_content(chunk_size=chunk_size), expected_size=(total_length/chunk_size) + 1):
+                    r.iter_content(chunk_size=chunk_size),
+                    expected_size=(total_length/chunk_size) + 1):
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
                     f.flush()
