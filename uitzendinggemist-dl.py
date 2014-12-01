@@ -9,14 +9,14 @@ Options:
 
 """
 from docopt import docopt
-from uitzendinggemist import Aflevering, Serie
+from uitzendinggemist import Episode, Serie
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Uitzending Gemist 1.0')
     for url in arguments['<url>']:
         if 'rss' not in url:
-            a = Aflevering.by_url(url)
-            print a.bestandsnaam
-            a.download()
+            episode = Episode.by_url(url)
+            print(episode.filename)
+            episode.download()
         else:
-            s = Serie.by_rss(url)
+            serie = Serie.by_rss(url)
